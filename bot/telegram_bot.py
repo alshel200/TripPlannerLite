@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from core.parser import parse_request, allowed_types_str
-
+from core.itinerary import generate_itinerary
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 
@@ -31,6 +31,25 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             f"Allowed trip types: {allowed_types_str()}"
         )
         return
+
+    result = generate_itinerary(
+        city=req["city"],
+        days=req["days"],
+        trip_type=req["trip_type"],
+    )
+
+    reply = f"📍 {result['city']} — {result['days']} days ({result['trip_type']})\n\n"
+
+    for day in result["itinerary"]:
+        reply += (
+            f"Day {day['day']}:\n"
+            f"  🌅 Morning: {day['morning']}\n"
+            f"  ☀️ Afternoon: {day['afternoon']}\n"
+            f"  🌙 Evening: {day['evening']}\n\n"
+        )
+
+    await update.message.reply_text(reply)
+
 
     await update.message.reply_text(
         "✅ Parsed request:\n"
