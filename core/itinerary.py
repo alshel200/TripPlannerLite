@@ -1,20 +1,35 @@
+from core.poi import get_top_pois_france
 def generate_itinerary(city: str, days: int, trip_type: str) -> dict:
+    # Берём реальные места (10 штук)
+    pois = get_top_pois_france(city, trip_type, top_n=10)
+
     itinerary = []
+    poi_idx = 0
 
     for day in range(1, days + 1):
-        day_plan = {
+        # по 3 места в день (утро/день/вечер), если не хватает — "Free time"
+        def next_poi_name():
+            nonlocal poi_idx
+            if poi_idx >= len(pois):
+                return "Free time"
+            name = pois[poi_idx]["name"]
+            poi_idx += 1
+            return name
+
+        itinerary.append({
             "day": day,
-            "morning": suggest_activity("morning", trip_type),
-            "afternoon": suggest_activity("afternoon", trip_type),
-            "evening": suggest_activity("evening", trip_type),
-        }
-        itinerary.append(day_plan)
+            "morning": next_poi_name(),
+            "afternoon": next_poi_name(),
+            "evening": next_poi_name(),
+        })
 
     return {
         "city": city,
         "days": days,
         "trip_type": trip_type,
+        "top_pois": [p["name"] for p in pois],
         "itinerary": itinerary,
+        "data_sources": ["OpenStreetMap Nominatim", "OpenStreetMap Overpass"],
     }
 
 

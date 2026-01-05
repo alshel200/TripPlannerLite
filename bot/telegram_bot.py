@@ -22,6 +22,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     text = (update.message.text or "").strip()
 
+    # 1️⃣ Парсинг пользовательского ввода
     try:
         req = parse_request(text)
     except ValueError as e:
@@ -32,13 +33,25 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         )
         return
 
-    result = generate_itinerary(
-        city=req["city"],
-        days=req["days"],
-        trip_type=req["trip_type"],
-    )
+    # 2️⃣ Генерация маршрута + POI (ЗДЕСЬ МЫ ЛОВИМ ОШИБКИ API)
+    try:
+        result = generate_itinerary(
+            city=req["city"],
+            days=req["days"],
+            trip_type=req["trip_type"],
+        )
+    except Exception as e:
+        await update.message.reply_text(
+            "⚠️ Failed to fetch places for this city.\n"
+            "Please try again in a few seconds or choose another city."
+        )
+        return
 
-    reply = f"📍 {result['city']} — {result['days']} days ({result['trip_type']})\n\n"
+    # 3️⃣ Формирование ответа пользователю
+    reply = (
+        f"📍 {result['city']} — {result['days']} days ({result['trip_type']})\n"
+        f"🧭 POI found: {result.get('poi_count', 0)}\n\n"
+    )
 
     for day in result["itinerary"]:
         reply += (
@@ -49,6 +62,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         )
 
     await update.message.reply_text(reply)
+
 
 
     await update.message.reply_text(
